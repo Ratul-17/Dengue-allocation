@@ -40,7 +40,7 @@ def allocate(hospital, date_input, age, weight, platelet, igg, igm, ns1):
     date = pd.to_datetime(date_input)
     
     try:
-        row = pred_df[(pred_df["Hospital"] == hospital) & (pred_df["Date"] == date)].iloc[0]
+        row = pred_df[(pred_df["Hospital"] == hospital) & (pred_df["<actual_date_column>"] == date)].iloc[0]
     except IndexError:
         return {"Date": date.strftime("%Y-%m-%d"), "Verdict": verdict, "Resource Needed": need, "Hospital Tried": hospital,
                 "Available at Current Hospital": "No", "Assigned Hospital": "N/A", "Distance (km)": "N/A", "Note": "Hospital/date not found."}
