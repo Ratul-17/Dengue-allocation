@@ -98,7 +98,29 @@ st.title("🏥 Dengue Patient Hospital Allocation")
 st.write("Enter patient details to determine hospital assignment.")
 
 with st.form("patient_form"):
-    hospital = st.text_input("Hospital Name")
+    # List of hospital names from your dataset
+hospital_list = [
+    "Ad-Din Medical College Hospital",
+    "Ahsania Mission Cancer & General Hospital",
+    "Anwer Khan Modern Medical College Hospital",
+    "Asgar Ali Hospital",
+    "Bangladesh Medical College Hospital",
+    "BRB Hospitals Limited",
+    "Central Hospital Limited",
+    "Dhanmondi General and Kidney Hospital",
+    "Dhaka Medical College Hospital",
+    "Green Life Medical College Hospital",
+    "Holy Family Red Crescent Medical College Hospital",
+    "Ibrahim Cardiac Hospital & Research Institute",
+    "Islami Bank Central Hospital Kakrail",
+    "Mugda Medical College",
+    "Popular Medical College Hospital",
+    "Sir Salimullah Medical College Mitford Hospital",
+    "Square Hospital Ltd.",
+    "Universal Medical College Hospital"
+]
+
+hospital = st.selectbox("Select Hospital", hospital_list)
     date_str = st.date_input("Admission/Test Date").strftime("%Y-%m-%d")
     age = st.number_input("Age", min_value=0, step=1)
     weight = st.number_input("Weight (kg)", min_value=0.0, step=0.1)
