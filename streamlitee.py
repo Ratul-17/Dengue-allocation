@@ -6,6 +6,9 @@ from datetime import datetime
 pred_df = pd.read_excel("rf_predictions_2026_2027_dynamic.xlsx")
 distance_df = pd.read_csv("distance matrix.csv", index_col=0)
 
+# DEBUG: Print the actual column names to verify
+st.write("🔎 Prediction Data Columns:", pred_df.columns.tolist())
+
 # Hospital dropdown options
 hospital_list = sorted(pred_df["Hospital"].dropna().unique().tolist())
 
