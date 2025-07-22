@@ -1,0 +1,19 @@
+Hospital Names (1st row & 1st Column),Dhaka Medical College Hospital,SSMC & Mitford Hospital,Bangladesh Shishu Hospital & Institute,Shaheed Suhrawardy Medical College hospital,Bangabandhu Shiekh Mujib Medical University,"Police Hospital, Rajarbagh",Mugda Medical College,Bangladesh Medical College Hospital,Holy Family Red Cresent Hospital,BIRDEM Hospital,Ibn Sina Hospital,Square Hospital,Samorita Hospital,Central Hospital Dhanmondi,Lab Aid Hospital,Green Life Medical Hospital,Sirajul Islam Medical College Hospital,Ad-Din Medical College Hospital
+Dhaka Medical College Hospital,0,2.5,7.6,7.2,1.7,3.7,6.1,5.8,3.1,2.2,5.7,4.5,4.7,3.1,3,4.1,4.2,3.7
+SSMC & Mitford Hospital,2.5,0,9.4,10.4,6.3,8,11,4,6.2,5.9,3.9,3.9,4.3,5.2,4.8,5.1,6.9,6.6
+Bangladesh Shishu Hospital & Institute,7.6,9.4,0,6.9,3.2,5.4,6.9,6,4.2,3.3,5.9,4.8,5.1,3.4,3.3,5.1,5.3,4.8
+Shaheed Suhrawardy Medical College hospital,7.2,10.4,6.9,0,5.9,7.5,10,3.6,5.8,5.5,3.5,3.5,3.9,4.8,4.4,5.4,6.2,5.7
+Bangabandhu Shiekh Mujib Medical University,1.7,6.3,3.2,5.9,0,2.8,6.4,4.7,1.6,0.7,4.4,2.8,3.2,1.9,1.8,2.5,2.7,2.1
+"Police Hospital, Rajarbagh",3.7,8,5.4,7.5,2.8,0,3.6,6.9,2.6,2.8,6.8,5,5.4,4.7,4.6,4.7,2.2,2.9
+Mugda Medical College,6.1,11,6.9,10,6.4,3.6,0,9.4,5.7,5.9,9.3,7.5,7.9,7.6,7.8,7.2,4.1,4.8
+Bangladesh Medical College Hospital,5.8,4,6,3.6,4.7,6.9,9.4,0,4.5,4.2,0.4,1.6,2,2.6,2.3,2.8,5.1,4.6
+Holy Family Red Cresent Hospital,3.1,6.2,4.2,5.8,1.6,2.6,5.7,4.5,0,1.4,5.1,3.3,3.7,3.4,3.4,3,1.2,0.95
+BIRDEM Hospital,2.2,5.9,3.3,5.5,0.7,2.8,5.9,4.2,1.4,0,4.5,4.5,3.3,1.9,1.8,2.6,2.8,2.2
+Ibn Sina Hospital,5.7,3.9,5.9,3.5,4.4,6.8,9.3,0.4,5.1,4.5,0,1.8,2.1,2.7,2.5,2.9,5.2,4.7
+Square Hospital,4.5,3.9,4.8,3.5,2.8,5,7.5,1.6,3.3,4.5,1.8,0,1.1,1.7,1.9,1.9,3,3.7
+Samorita Hospital,4.7,4.3,5.1,3.9,3.2,5.4,7.9,2,3.7,3.3,2.1,1.1,0,1.2,0.25,0.8,3,2.6
+Central Hospital Dhanmondi,3.1,5.2,3.4,4.8,1.9,4.7,7.6,2.6,3.4,1.9,2.7,1.7,1.2,0,0.25,0.4,3.8,3.2
+Lab Aid Hospital,3,4.8,3.3,4.4,1.8,4.6,7.8,2.3,3.4,1.8,2.5,1.9,0.25,0.25,0,0.35,4.2,3.7
+Green Life Medical Hospital,4.1,5.1,5.1,5.4,2.5,4.7,7.2,2.8,3,2.6,2.9,1.9,0.8,0.4,0.35,0,3.9,3.4
+Sirajul Islam Medical College Hospital,4.2,6.9,5.3,6.2,2.7,2.2,4.1,5.1,1.2,2.8,5.2,3,3,3.8,4.2,3.9,0,1.5
+Ad-Din Medical College Hospital,3.7,6.6,4.8,5.7,2.1,2.9,4.8,4.6,0.95,2.2,4.7,3.7,2.6,3.2,3.7,3.4,1.5,0
