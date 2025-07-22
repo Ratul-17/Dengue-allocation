@@ -1,151 +1,126 @@
-import streamlit as st
 import pandas as pd
+import numpy as np
+from datetime import datetime
 
-# Load prediction and distance matrix data
+# Load data
 pred_df = pd.read_excel("rf_predictions_2026_2027_dynamic.xlsx")
 distance_df = pd.read_csv("distance matrix.csv", index_col=0)
 
-# Format date column from Year and Month
-pred_df["Date"] = pd.to_datetime(pred_df["Year"].astype(str) + "-" + pred_df["Month"].astype(str) + "-01")
+# Clean whitespace
+pred_df["Hospital"] = pred_df["Hospital"].str.strip()
+distance_df.columns = distance_df.columns.str.strip()
+distance_df.index = distance_df.index.str.strip()
 
-# Hospital dropdown options
-unique_hospitals = sorted(prediction_df["Hospital"].dropna().unique())
-unique_hospitals
-Result
-['Ad-Din Medical College Hospital',
- 'BIRDEM Hospital',
- 'Bangabandhu Shiekh Mujib Medical University',
- 'Bangladesh Medical College Hospital',
- 'Bangladesh Shishu Hospital & Institute',
- 'Central Hospital Dhanmondi',
- 'Dhaka Medical College Hospital',
- 'Green Life Medical Hospital',
- 'Holy Family Red Cresent Hospital',
- 'Ibn Sina Hospital',
- 'Lab Aid Hospital',
- 'Mugda Medical College',
- 'Police Hospital, Rajarbagh',
- 'SSMC & Mitford Hospital',
- 'Samorita Hospital',
- 'Shaheed Suhrawardy Medical College hospital',
- 'Sirajul Islam Medical College Hospital',
- 'Square Hospital']
+# Hospital list for UI dropdown
+hospital_list = sorted(pred_df["Hospital"].unique())
 
+# Determine severity
+def determine_verdict(platelet, igg, igm, ns1):
+    if ns1 == "Positive" and (igg == "Positive" or igm == "Positive") and platelet < 50000:
+        return "Very Severe"
+    elif ns1 == "Positive" and platelet < 100000:
+        return "Severe"
+    else:
+        return "Normal"
 
-# Verdict classification
-def classify_verdict(platelet, igg, igm, ns1):
-    if ns1 == "Positive" and (igg == "Positive" or igm == "Positive"):
-        if platelet < 20000:
-            return "Very Severe", "ICU"
-        elif platelet < 50000:
-            return "Severe", "ICU"
-        else:
-            return "Moderate", "General"
-    return "Normal", "General"
+# Resource needed
+def resource_needed(verdict):
+    return "ICU" if verdict == "Very Severe" else "General"
 
 # Main allocation function
-def allocate_patient(hospital, date_input, age, weight, platelet, igg, igm, ns1):
-    date = pd.to_datetime(date_input)
-    verdict, resource = classify_verdict(platelet, igg, igm, ns1)
+def allocate_patient(hospital, year, month, age, weight, platelet, igg, igm, ns1):
+    verdict = determine_verdict(platelet, igg, igm, ns1)
+    resource = resource_needed(verdict)
 
-    try:
-        row = pred_df[(pred_df["Hospital"] == hospital) & (pred_df["Date"] == date)].iloc[0]
-    except IndexError:
+    # Filter for current hospital and date
+    match = pred_df[
+        (pred_df["Hospital"] == hospital) &
+        (pred_df["Year"] == int(year)) &
+        (pred_df["Month"] == int(month))
+    ]
+
+    if match.empty:
         return {
-            "Date": date.strftime("%Y-%m-%d"),
+            "Year": year,
+            "Month": month,
             "Verdict": verdict,
             "Resource Needed": resource,
             "Hospital Tried": hospital,
-            "Note": "Hospital not found in prediction"
+            "Note": "Hospital not found in prediction data"
         }
 
-    available = False
-    if resource == "ICU":
-        available = row["ICU Beds Occupied"] < row["ICU Beds Total"]
-    else:
-        available = row["Beds Occupied"] < row["Beds Total"]
+    row = match.iloc[0]
+    general_vacant = row["Beds Total"] - row["Beds Occupied"]
+    icu_vacant = row["ICU Beds Total"] - row["ICU Beds Occupied"]
 
-    if available:
+    if resource == "General" and general_vacant > 0:
         return {
-            "Date": date.strftime("%Y-%m-%d"),
+            "Year": year,
+            "Month": month,
             "Verdict": verdict,
             "Resource Needed": resource,
             "Hospital Tried": hospital,
-            "Available at Current Hospital": "Yes",
             "Assigned Hospital": hospital,
-            "Note": "Assigned at selected hospital"
+            "Distance (km)": 0,
+            "Note": "Assigned at current hospital"
         }
 
-    if hospital not in distance_df.columns:
+    if resource == "ICU" and icu_vacant > 0:
         return {
-            "Date": date.strftime("%Y-%m-%d"),
+            "Year": year,
+            "Month": month,
             "Verdict": verdict,
             "Resource Needed": resource,
             "Hospital Tried": hospital,
-            "Available at Current Hospital": "No",
-            "Assigned Hospital": "None Found",
+            "Assigned Hospital": hospital,
+            "Distance (km)": 0,
+            "Note": "Assigned at current hospital"
+        }
+
+    # Reroute to nearest
+    try:
+        distances = distance_df[hospital].sort_values()
+    except KeyError:
+        return {
+            "Year": year,
+            "Month": month,
+            "Verdict": verdict,
+            "Resource Needed": resource,
+            "Hospital Tried": hospital,
             "Note": "Hospital not found in distance matrix"
         }
 
-    sorted_hospitals = distance_df[hospital].sort_values()
-    for alt_hospital in sorted_hospitals.index:
+    for alt_hospital in distances.index:
         if alt_hospital == hospital:
             continue
-        try:
-            alt_row = pred_df[(pred_df["Hospital"] == alt_hospital) & (pred_df["Date"] == date)].iloc[0]
-        except IndexError:
+        alt_match = pred_df[
+            (pred_df["Hospital"] == alt_hospital) &
+            (pred_df["Year"] == int(year)) &
+            (pred_df["Month"] == int(month))
+        ]
+        if alt_match.empty:
             continue
-
-        if resource == "ICU" and alt_row["ICU Beds Occupied"] < alt_row["ICU Beds Total"]:
+        alt_row = alt_match.iloc[0]
+        alt_general = alt_row["Beds Total"] - alt_row["Beds Occupied"]
+        alt_icu = alt_row["ICU Beds Total"] - alt_row["ICU Beds Occupied"]
+        if (resource == "General" and alt_general > 0) or (resource == "ICU" and alt_icu > 0):
             return {
-                "Date": date.strftime("%Y-%m-%d"),
+                "Year": year,
+                "Month": month,
                 "Verdict": verdict,
                 "Resource Needed": resource,
                 "Hospital Tried": hospital,
-                "Available at Current Hospital": "No",
                 "Assigned Hospital": alt_hospital,
-                "Distance (km)": sorted_hospitals[alt_hospital],
-                "Note": "Rerouted to nearest hospital with ICU"
-            }
-
-        if resource == "General" and alt_row["Beds Occupied"] < alt_row["Beds Total"]:
-            return {
-                "Date": date.strftime("%Y-%m-%d"),
-                "Verdict": verdict,
-                "Resource Needed": resource,
-                "Hospital Tried": hospital,
-                "Available at Current Hospital": "No",
-                "Assigned Hospital": alt_hospital,
-                "Distance (km)": sorted_hospitals[alt_hospital],
-                "Note": "Rerouted to nearest hospital with General Bed"
+                "Distance (km)": float(distances[alt_hospital]),
+                "Note": "Assigned at nearest hospital"
             }
 
     return {
-        "Date": date.strftime("%Y-%m-%d"),
+        "Year": year,
+        "Month": month,
         "Verdict": verdict,
         "Resource Needed": resource,
         "Hospital Tried": hospital,
-        "Available at Current Hospital": "No",
         "Assigned Hospital": "None Found",
         "Note": "No available hospitals found nearby"
     }
-
-# Streamlit UI
-st.set_page_config(page_title="Dengue Patient Allocation", layout="centered")
-st.title("🏥 Dengue Patient Allocation System")
-st.markdown("Assigns ICU or General Beds based on patient severity and real-time availability.")
-
-hospital = st.selectbox("🏨 Select Hospital", hospital_list)
-date_input = st.date_input("📅 Admission/Test Date")
-age = st.number_input("👤 Age", min_value=0)
-weight = st.number_input("⚖️ Weight (kg)", min_value=0)
-platelet = st.number_input("🩸 Platelet Count", min_value=0)
-
-igg = st.selectbox("🧪 IgG Result", ["Positive", "Negative"])
-igm = st.selectbox("🧪 IgM Result", ["Positive", "Negative"])
-ns1 = st.selectbox("🧪 NS1 Result", ["Positive", "Negative"])
-
-if st.button("🚨 Allocate Patient"):
-    result = allocate_patient(hospital, date_input, age, weight, platelet, igg, igm, ns1)
-    st.subheader("📋 Allocation Result")
-    st.json(result)
