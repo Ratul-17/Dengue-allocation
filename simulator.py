@@ -9,7 +9,27 @@ distance_df = pd.read_csv("distance matrix.csv", index_col=0)
 pred_df["Date"] = pd.to_datetime(pred_df["Year"].astype(str) + "-" + pred_df["Month"].astype(str) + "-01")
 
 # Hospital dropdown options
-hospital_list = sorted(pred_df["Hospital"].unique())
+hospital = st.selectbox("🏥 Select Hospital", [
+    "Ad-Din Medical College Hospital",
+    "BIRDEM Hospital",
+    "Bangabandhu Shiekh Mujib Medical University",
+    "Bangladesh Medical College Hospital",
+    "Bangladesh Shishu Hospital & Institute",
+    "Central Hospital Dhanmondi",
+    "Dhaka Medical College Hospital",
+    "Green Life Medical Hospital",
+    "Holy Family Red Cresent Hospital",
+    "Ibn Sina Hospital",
+    "Lab Aid Hospital",
+    "Mugda Medical College",
+    "Police Hospital, Rajarbagh",
+    "SSMC & Mitford Hospital",
+    "Samorita Hospital",
+    "Shaheed Suhrawardy Medical College hospital",
+    "Sirajul Islam Medical College Hospital",
+    "Square Hospital"
+])
+
 
 # Verdict classification
 def classify_verdict(platelet, igg, igm, ns1):
