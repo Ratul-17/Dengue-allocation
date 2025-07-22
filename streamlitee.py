@@ -19,9 +19,15 @@ date_input = st.date_input("Date of Admission", min_value=datetime(2026, 1, 1), 
 age = st.number_input("Age", min_value=1, max_value=120)
 weight = st.number_input("Weight (kg)", min_value=1, max_value=200)
 platelet = st.number_input("Platelet Count", min_value=1)
-igg = st.number_input("IgG Level", min_value=0.0)
-igm = st.number_input("IgM Level", min_value=0.0)
+igg = st.radio("IgG Result", options=["Positive", "Negative"])
+igm = st.radio("IgM Result", options=["Positive", "Negative"])
 ns1 = st.radio("NS1 Result", options=["Positive", "Negative"])
+
+# Convert to binary format for logic (if your model expects it)
+igg_flag = 1 if igg == "Positive" else 0
+igm_flag = 1 if igm == "Positive" else 0
+ns1_flag = 1 if ns1 == "Positive" else 0
+
 
 # Define decision logic
 def get_verdict(age, weight, platelet, igg, igm, ns1):
