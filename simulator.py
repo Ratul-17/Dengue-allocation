@@ -1,127 +1,99 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 
-# Load data
+# Load datasets
 pred_df = pd.read_excel("rf_predictions_2026_2027_dynamic.xlsx")
 distance_df = pd.read_csv("distance matrix.csv", index_col=0)
 
-# Clean up
-pred_df.columns = pred_df.columns.str.strip()
-distance_df.columns = distance_df.columns.str.strip()
-distance_df.index = distance_df.index.str.strip()
+# Parse integer year/month into full date
+pred_df["Date"] = pd.to_datetime(pred_df[["Year", "Month"]].assign(DAY=1))
 
-# Generate Date column
-pred_df["Date"] = pd.to_datetime(pred_df["Year"].astype(str) + "-" + pred_df["Month"].astype(str) + "-01")
+# Prepare hospital list
+hospital_list = sorted(pred_df["Hospital"].unique().tolist())
 
-# Hospital Dropdown
-hospital_list = sorted(pred_df["Hospital"].dropna().unique())
+# Severity checker
+def get_verdict(age, weight, platelet, igg, igm, ns1):
+    if platelet < 20000 or ns1 == 'positive':
+        return "Very Severe"
+    elif platelet < 80000 or igg == 'positive' or igm == 'positive':
+        return "Severe"
+    else:
+        return "Normal"
 
-# Verdict logic
-def determine_verdict(platelet, igg, igm, ns1):
-    if ns1 == 'Positive' or igg == 'Positive' or igm == 'Positive':
-        if platelet < 100000:
-            if platelet < 50000:
-                return "Very Severe"
-            return "Severe"
-        return "Moderate"
-    return "Normal"
+# Allocation logic
+def allocate_patient(hospital, date_input, age, weight, platelet, igg, igm, ns1):
+    date = pd.to_datetime(date_input)
+    verdict = get_verdict(age, weight, platelet, igg, igm, ns1)
+    resource_type = "ICU Beds Occupied" if verdict == "Very Severe" else "Beds Occupied"
+    required_total = "ICU Beds Total" if resource_type == "ICU Beds Occupied" else "Beds Total"
 
-# Allocation
-def allocate(hospital, date_input, age, weight, platelet, igg, igm, ns1, mode="realistic"):
-    verdict = determine_verdict(platelet, igg, igm, ns1)
-    date = pd.to_datetime(date_input.replace(day=1))
-    resource_needed = "ICU" if verdict in ["Severe", "Very Severe"] else "General Bed"
-
-    try:
-        row = pred_df[(pred_df["Hospital"] == hospital) & (pred_df["Date"] == date)].iloc[0]
-    except IndexError:
-        return {
-            "Date": date.strftime("%Y-%m-%d"),
-            "Verdict": verdict,
-            "Resource Needed": resource_needed,
-            "Hospital Tried": hospital,
-            "Available at Current Hospital": "Unknown",
-            "Note": "Hospital/date not found in dataset"
-        }
-
-    total_beds = row["Beds Total"]
-    occ_beds = row["Beds Occupied"]
-    total_icu = row["ICU Beds Total"]
-    occ_icu = row["ICU Beds Occupied"]
-
-    current_available = (occ_icu < total_icu) if resource_needed == "ICU" else (occ_beds < total_beds)
-
-    assigned_hospital = hospital
-    rerouted_distance = None
-    rerouted = False
-
-    if mode == "demo_force_reroute":
-        rerouted = not current_available
-    elif mode == "demo_alternate":
-        rerouted = hash(hospital + str(date)) % 2 == 0
-
-    if not current_available or rerouted:
-        try:
-            distances = distance_df[hospital].sort_values()
-        except KeyError:
+    # Check primary hospital
+    row = pred_df[(pred_df["Hospital"] == hospital) & (pred_df["Date"] == date)]
+    if not row.empty:
+        row = row.iloc[0]
+        if row[resource_type] < row[required_total]:
             return {
                 "Date": date.strftime("%Y-%m-%d"),
                 "Verdict": verdict,
-                "Resource Needed": resource_needed,
+                "Resource Needed": "ICU" if verdict == "Very Severe" else "General Bed",
                 "Hospital Tried": hospital,
-                "Available at Current Hospital": "No",
-                "Note": "Hospital not found in distance matrix"
+                "Available at Current Hospital": "Yes",
+                "Assigned Hospital": hospital,
+                "Note": "Assigned at selected hospital"
             }
 
-        for alt_hospital in distances.index:
-            try:
-                alt_row = pred_df[(pred_df["Hospital"] == alt_hospital) & (pred_df["Date"] == date)].iloc[0]
-                if resource_needed == "ICU" and alt_row["ICU Beds Occupied"] < alt_row["ICU Beds Total"]:
-                    assigned_hospital = alt_hospital
-                    rerouted_distance = distances[alt_hospital]
-                    break
-                elif resource_needed == "General Bed" and alt_row["Beds Occupied"] < alt_row["Beds Total"]:
-                    assigned_hospital = alt_hospital
-                    rerouted_distance = distances[alt_hospital]
-                    break
-            except:
-                continue
+    # Try rerouting using distance matrix
+    if hospital not in distance_df.columns:
+        return {
+            "Date": date.strftime("%Y-%m-%d"),
+            "Verdict": verdict,
+            "Resource Needed": "ICU" if verdict == "Very Severe" else "General Bed",
+            "Hospital Tried": hospital,
+            "Available at Current Hospital": "No",
+            "Assigned Hospital": "Not Found",
+            "Note": "Hospital not found in distance matrix."
+        }
+
+    distances = distance_df[hospital].sort_values()
+    for nearby_hospital in distances.index:
+        row = pred_df[(pred_df["Hospital"] == nearby_hospital) & (pred_df["Date"] == date)]
+        if not row.empty:
+            row = row.iloc[0]
+            if row[resource_type] < row[required_total]:
+                return {
+                    "Date": date.strftime("%Y-%m-%d"),
+                    "Verdict": verdict,
+                    "Resource Needed": "ICU" if verdict == "Very Severe" else "General Bed",
+                    "Hospital Tried": hospital,
+                    "Available at Current Hospital": "No",
+                    "Assigned Hospital": nearby_hospital,
+                    "Distance (KM)": float(distances[nearby_hospital]),
+                    "Note": "Rerouted to nearest available hospital"
+                }
 
     return {
         "Date": date.strftime("%Y-%m-%d"),
         "Verdict": verdict,
-        "Resource Needed": resource_needed,
+        "Resource Needed": "ICU" if verdict == "Very Severe" else "General Bed",
         "Hospital Tried": hospital,
-        "Available at Current Hospital": "Yes" if assigned_hospital == hospital else "No",
-        "Assigned Hospital": assigned_hospital,
-        "Distance (km)" if assigned_hospital != hospital else "Note": rerouted_distance if rerouted_distance else "Assigned at selected hospital"
+        "Available at Current Hospital": "No",
+        "Assigned Hospital": "None Found",
+        "Note": "No available hospitals found nearby"
     }
 
 # Streamlit UI
-st.set_page_config(page_title="🦟 Dengue Patient Allocator", layout="centered")
-st.title("🏥 Dengue Patient Allocation Dashboard")
+st.title("🏥 Dengue Patient Allocation System")
 
-with st.form("allocate_form"):
-    st.subheader("🔎 Patient & Test Information")
-    hospital = st.selectbox("🏨 Select Hospital", hospital_list)
-    date_input = st.date_input("📅 Test/Admission Date", value=datetime(2026, 10, 25))
-    age = st.number_input("Age", 0, 120, value=30)
-    weight = st.number_input("Weight (kg)", 1, 200, value=65)
-    platelet = st.number_input("Platelet Count", 0, 500000, value=130000)
-    igg = st.radio("IgG", ["Positive", "Negative"])
-    igm = st.radio("IgM", ["Positive", "Negative"])
-    ns1 = st.radio("NS1", ["Positive", "Negative"])
-    mode = st.selectbox("Mode", ["Realistic", "Demo: Force Reroute", "Demo: Alternate"])
+hospital = st.selectbox("Select Hospital", hospital_list)
+date_input = st.date_input("Select Date")
+age = st.number_input("Age", min_value=0, max_value=120)
+weight = st.number_input("Weight (kg)", min_value=0.0)
+platelet = st.number_input("Platelet Count", min_value=0)
+igg = st.radio("IgG", options=["positive", "negative"])
+igm = st.radio("IgM", options=["positive", "negative"])
+ns1 = st.radio("Ns1", options=["positive", "negative"])
 
-    submitted = st.form_submit_button("🚑 Allocate Patient")
-
-if submitted:
-    mode_flag = {
-        "Realistic": "realistic",
-        "Demo: Force Reroute": "demo_force_reroute",
-        "Demo: Alternate": "demo_alternate"
-    }[mode]
-    result = allocate(hospital, date_input, age, weight, platelet, igg, igm, ns1, mode=mode_flag)
+if st.button("Allocate Patient"):
+    result = allocate_patient(hospital, date_input, age, weight, platelet, igg, igm, ns1)
     st.subheader("📋 Allocation Result")
     st.json(result)
