@@ -4,6 +4,21 @@ import datetime
 
 # Load prediction and distance data
 pred_df = pd.read_excel("rf_predictions_2026_2027_dynamic.xlsx")
+
+# Clean column names to remove extra whitespace and standardize
+pred_df.columns = pred_df.columns.str.strip()
+
+# Check for possible variations of "Date"
+if 'Date' not in pred_df.columns:
+    # Print all column names if debugging locally
+    st.write("⚠ Columns found:", list(pred_df.columns))
+
+# Convert Date column (if exists) to datetime
+if 'Date' in pred_df.columns:
+    pred_df["Date"] = pd.to_datetime(pred_df["Date"])
+else:
+    st.error("❌ 'Date' column not found in the prediction dataset.")
+
 distance_df = pd.read_csv("distance matrix.csv", index_col=0)
 
 # Ensure datetime is in correct format
