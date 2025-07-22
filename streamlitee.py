@@ -6,13 +6,14 @@ from datetime import datetime
 pred_df = pd.read_excel("rf_predictions_2026_2027_dynamic.xlsx")
 distance_df = pd.read_csv("distance matrix.csv", index_col=0)
 
-# Clean column names (fix KeyError: 'Date')
+# Clean column names
 pred_df.columns = pred_df.columns.str.strip()
 
-if 'Date' in pred_df.columns:
-    pred_df["Date"] = pd.to_datetime(pred_df["Date"])
+# Construct a Date column from 'Year' and 'Month'
+if "Year" in pred_df.columns and "Month" in pred_df.columns:
+    pred_df["Date"] = pd.to_datetime(pred_df["Year"].astype(str) + "-" + pred_df["Month"].astype(str) + "-01")
 else:
-    st.error("❌ 'Date' column not found in the prediction dataset.")
+    st.error("❌ 'Year' and 'Month' columns not found in the prediction dataset.")
     st.stop()
 
 # Dropdown hospital list
@@ -30,12 +31,12 @@ def determine_verdict(platelet, igg, igm, ns1):
 
 def allocate(hospital, date_input, age, weight, platelet, igg, igm, ns1):
     verdict = determine_verdict(platelet, igg, igm, ns1)
-    date = pd.to_datetime(date_input)
+    date = pd.to_datetime(date_input.replace(day=1))
 
     # Resource needed
     resource_needed = "ICU" if verdict in ["Severe", "Very Severe"] else "General Bed"
 
-    # Try to get row for that hospital and date
+    # Try to get row for that hospital and month
     try:
         row = pred_df[(pred_df["Hospital"] == hospital) & (pred_df["Date"] == date)].iloc[0]
     except IndexError:
